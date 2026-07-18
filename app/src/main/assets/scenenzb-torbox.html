@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#ffffff">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>TreasureToTorbox</title>
+<style>
+  :root {
+    --accent: #2563eb;
+    --accent-light: #eff6ff;
+    --accent-text: #1d4ed8;
+    --success: #16a34a;
+    --success-light: #f0fdf4;
+    --danger: #dc2626;
+    --danger-light: #fef2f2;
+    --warning-light: #fffbeb;
+    --warning-text: #92400e;
+    --bg: #ffffff;
+    --bg2: #f9fafb;
+    --bg3: #f3f4f6;
+    --border: #e5e7eb;
+    --text: #111827;
+    --text2: #6b7280;
+    --text3: #9ca3af;
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #111827; --bg2: #1f2937; --bg3: #374151;
+      --border: #374151; --text: #f9fafb; --text2: #9ca3af; --text3: #6b7280;
+      --accent-light: #1e3a5f; --success-light: #052e16; --danger-light: #450a0a;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg2); color: var(--text); min-height: 100vh; }
+
+  /* Top bar */
+  .topbar { background: var(--bg); border-bottom: 1px solid var(--border); padding: 14px 16px; display: flex; align-items: center; gap: 10px; position: sticky; top: 0; z-index: 100; }
+  .topbar-title { font-size: 17px; font-weight: 600; flex: 1; }
+  .topbar-sub { font-size: 11px; color: var(--text2); margin-top: 1px; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #d1d5db; flex-shrink: 0; }
+  .status-dot.ok { background: var(--success); }
+  .status-dot.err { background: var(--danger); }
+
+  /* Settings */
+  .settings-btn { padding: 7px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--bg); color: var(--text2); font-size: 13px; cursor: pointer; display: flex; align-items: center; gap: 5px; }
+  .settings-panel { background: var(--bg); border-bottom: 1px solid var(--border); padding: 16px; display: none; }
+  .settings-panel.open { display: block; }
+  .field { margin-bottom: 12px; }
+  .field label { display: block; font-size: 12px; font-weight: 600; color: var(--text2); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .field input { width: 100%; padding: 11px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; background: var(--bg2); color: var(--text); outline: none; }
+  .field input:focus { border-color: var(--accent); }
+
+  /* Search */
+  .search-section { background: var(--bg); border-bottom: 1px solid var(--border); padding: 12px 16px; }
+  .search-bar { display: flex; gap: 8px; margin-bottom: 10px; }
+  .search-bar input { flex: 1; padding: 11px 14px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-size: 15px; background: var(--bg2); color: var(--text); outline: none; }
+  .search-bar input:focus { border-color: var(--accent); }
+
+  /* Buttons */
+  .btn { padding: 11px 16px; border-radius: var(--radius-sm); border: none; font-size: 15px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; gap: 6px; transition: opacity 0.15s; -webkit-appearance: none; }
+  .btn:active { opacity: 0.7; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-block { width: 100%; }
+  .btn-sm { padding: 8px 14px; font-size: 13px; border-radius: var(--radius-sm); }
+  .btn-ghost { background: var(--bg3); color: var(--text); border: none; }
+  .btn-success { background: var(--success); color: #fff; }
+
+  /* Categories */
+  .cats { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+  .cats::-webkit-scrollbar { display: none; }
+  .cat { padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border); background: var(--bg); color: var(--text2); font-size: 13px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
+  .cat.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+  /* Results */
+  .results-wrap { padding: 12px 16px; display: flex; flex-direction: column; gap: 10px; }
+  .card { background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 14px; }
+  .card-title { font-size: 14px; font-weight: 500; line-height: 1.4; margin-bottom: 8px; word-break: break-word; }
+  .card-meta { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .meta { font-size: 12px; color: var(--text2); display: flex; align-items: center; gap: 3px; }
+  .card-actions { display: flex; gap: 8px; }
+
+  /* States */
+  .empty { text-align: center; padding: 48px 24px; color: var(--text2); font-size: 15px; }
+  .empty svg { width: 48px; height: 48px; margin: 0 auto 12px; display: block; opacity: 0.3; }
+
+  /* Toast */
+  .toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--text); color: var(--bg); padding: 12px 20px; border-radius: 24px; font-size: 14px; font-weight: 500; transition: transform 0.3s cubic-bezier(.34,1.56,.64,1); z-index: 999; white-space: nowrap; max-width: 90vw; text-align: center; }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+  .toast.success { background: var(--success); color: #fff; }
+  .toast.error { background: var(--danger); color: #fff; }
+
+  /* Loader */
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spin { animation: spin 0.8s linear infinite; display: inline-block; }
+
+  /* Info box */
+  .info-box { margin: 0 16px 12px; padding: 12px 14px; background: var(--warning-light); border-radius: var(--radius-sm); border: 1px solid #fde68a; font-size: 13px; color: var(--warning-text); line-height: 1.5; }
+</style>
+</head>
+<body>
+
+<!-- Top bar -->
+<div class="topbar">
+  <div style="flex:1">
+    <div class="topbar-title">TreasureToTorbox</div>
+    <div class="topbar-sub" id="status-text">Bitte API-Keys einrichten</div>
+  </div>
+  <div class="status-dot" id="status-dot"></div>
+  <button class="settings-btn" onclick="toggleSettings()">
+    ⚙ Einstellungen
+  </button>
+</div>
+
+<!-- Settings panel -->
+<div class="settings-panel" id="settings-panel">
+  <div class="field">
+    <label>Treasure-Maps API-Key</label>
+    <input type="password" id="snzb-key" placeholder="API-Key von treasure-maps.com/profile" autocomplete="off" />
+  </div>
+  <div class="field">
+    <label>TorBox API-Key</label>
+    <input type="password" id="tb-key" placeholder="API-Key von torbox.app/settings" autocomplete="off" />
+  </div>
+  <button class="btn btn-primary btn-block" onclick="saveKeys()">Speichern</button>
+</div>
+
+<!-- Search -->
+<div class="search-section">
+  <div class="search-bar">
+    <input type="text" id="query" placeholder="Suchen…" onkeydown="if(event.key==='Enter'){this.blur();doSearch();}" />
+    <button class="btn btn-primary" onclick="doSearch()" id="search-btn" style="min-width:54px">
+      <span id="search-icon">🔍</span>
+    </button>
+  </div>
+  <div class="cats" id="cats">
+    <button class="cat active" data-cat="" onclick="setCat(this,'')">Alle</button>
+    <button class="cat" data-cat="2000" onclick="setCat(this,'2000')">🎬 Filme</button>
+    <button class="cat" data-cat="5000" onclick="setCat(this,'5000')">📺 TV</button>
+    <button class="cat" data-cat="3000" onclick="setCat(this,'3000')">🎵 Musik</button>
+    <button class="cat" data-cat="1000" onclick="setCat(this,'1000')">💻 PC</button>
+    <button class="cat" data-cat="7000" onclick="setCat(this,'7000')">📚 Bücher</button>
+    <button class="cat" data-cat="6000" onclick="setCat(this,'6000')">🎮 Games</button>
+    <button class="cat" data-cat="4000" onclick="setCat(this,'4000')">📱 Mobile</button>
+  </div>
+</div>
+
+<!-- Results -->
+<div id="results-wrap">
+  <div class="empty">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    Suchbegriff eingeben und los!
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+  var snzbKey = '', tbKey = '', currentCat = '';
+
+  // Load saved keys
+  try {
+    snzbKey = localStorage.getItem('snzb_key') || '';
+    tbKey = localStorage.getItem('tb_key') || '';
+    if (snzbKey) document.getElementById('snzb-key').value = snzbKey;
+    if (tbKey) document.getElementById('tb-key').value = tbKey;
+    if (snzbKey && tbKey) updateStatus(true);
+  } catch(e) {}
+
+  function updateStatus(ok) {
+    document.getElementById('status-dot').className = 'status-dot' + (ok ? ' ok' : ' err');
+    document.getElementById('status-text').textContent = ok ? 'Verbunden ✓' : 'Nicht verbunden';
+  }
+
+  function toggleSettings() {
+    var p = document.getElementById('settings-panel');
+    p.classList.toggle('open');
+  }
+
+  function saveKeys() {
+    snzbKey = document.getElementById('snzb-key').value.trim();
+    tbKey = document.getElementById('tb-key').value.trim();
+    if (!snzbKey || !tbKey) { showToast('Beide Keys eingeben!', 'error'); return; }
+    try { localStorage.setItem('snzb_key', snzbKey); localStorage.setItem('tb_key', tbKey); } catch(e) {}
+    updateStatus(true);
+    document.getElementById('settings-panel').classList.remove('open');
+    showToast('Keys gespeichert ✓', 'success');
+  }
+
+  function setCat(el, cat) {
+    currentCat = cat;
+    document.querySelectorAll('.cat').forEach(function(b){ b.classList.remove('active'); });
+    el.classList.add('active');
+  }
+
+  function fmtSize(bytes) {
+    if (!bytes) return '?';
+    if (bytes > 1073741824) return (bytes/1073741824).toFixed(1)+' GB';
+    if (bytes > 1048576) return Math.round(bytes/1048576)+' MB';
+    return Math.round(bytes/1024)+' KB';
+  }
+
+  function fmtDate(str) {
+    if (!str) return '';
+    try { return new Date(str).toLocaleDateString('de-DE', {day:'2-digit',month:'2-digit',year:'numeric'}); } catch(e) { return ''; }
+  }
+
+  async function doSearch() {
+    if (!snzbKey) { showToast('Bitte zuerst API-Keys einrichten', 'error'); return; }
+    var q = document.getElementById('query').value.trim();
+    if (!q) return;
+
+    var btn = document.getElementById('search-btn');
+    document.getElementById('search-icon').innerHTML = '<span class="spin">↻</span>';
+    btn.disabled = true;
+
+    document.getElementById('results-wrap').innerHTML = '<div class="empty">Suche läuft…</div>';
+
+    var catParam = currentCat ? '&cat=' + currentCat : '';
+    var url = 'https://treasure-maps.com/api?t=search&q=' + encodeURIComponent(q) + '&apikey=' + snzbKey + '&extended=1&limit=30' + catParam;
+
+    try {
+      var res = await fetch(url);
+      var text = await res.text();
+      var parser = new DOMParser();
+      var xml = parser.parseFromString(text, 'application/xml');
+      var items = xml.querySelectorAll('item');
+
+      document.getElementById('search-icon').textContent = '🔍';
+      btn.disabled = false;
+
+      if (!items.length) {
+        document.getElementById('results-wrap').innerHTML = '<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>Keine Ergebnisse gefunden.</div>';
+        return;
+      }
+
+      var html = '<div class="results-wrap">';
+      var arr = Array.from(items);
+      arr.forEach(function(item, i) {
+        var title = (item.querySelector('title') || {}).textContent || 'Unbekannt';
+        var link = (item.querySelector('link') || {}).textContent || '';
+        var enclosure = item.querySelector('enclosure');
+        var size = enclosure ? parseInt(enclosure.getAttribute('length') || '0') : 0;
+        var pubDate = (item.querySelector('pubDate') || {}).textContent || '';
+        var category = (item.querySelector('category') || {}).textContent || '';
+
+        html += '<div class="card">';
+        html += '<div class="card-title">' + escHtml(title) + '</div>';
+        html += '<div class="card-meta">';
+        if (size) html += '<span class="meta">📦 ' + fmtSize(size) + '</span>';
+        if (pubDate) html += '<span class="meta">📅 ' + fmtDate(pubDate) + '</span>';
+        if (category) html += '<span class="meta">🏷 ' + escHtml(category) + '</span>';
+        html += '</div>';
+        html += '<div class="card-actions">';
+        html += '<button class="btn btn-success btn-sm" id="tbtn-'+i+'" onclick="sendToTorbox('+i+',\''+encodeURIComponent(link)+'\',\''+encodeURIComponent(title)+'\')">↗ TorBox</button>';
+        html += '</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+      document.getElementById('results-wrap').innerHTML = '<div style="padding:8px 16px 0;font-size:13px;color:var(--text2)">' + arr.length + ' Ergebnisse</div>' + html;
+
+    } catch(e) {
+      document.getElementById('search-icon').textContent = '🔍';
+      btn.disabled = false;
+      document.getElementById('results-wrap').innerHTML = '<div class="empty" style="color:var(--danger)">Fehler: ' + escHtml(e.message) + '<br><br><small>Prüfe deinen API-Key und die Internetverbindung.</small></div>';
+    }
+  }
+
+  async function sendToTorbox(idx, encodedLink, encodedTitle) {
+    if (!tbKey) { showToast('TorBox API-Key fehlt', 'error'); return; }
+    var btn = document.getElementById('tbtn-' + idx);
+    btn.disabled = true;
+    btn.textContent = '…';
+
+    try {
+      var link = decodeURIComponent(encodedLink);
+      var title = decodeURIComponent(encodedTitle);
+
+      var nzbRes = await fetch(link);
+      if (!nzbRes.ok) throw new Error('NZB-Download ' + nzbRes.status);
+      var blob = await nzbRes.blob();
+      var filename = title.replace(/[^a-zA-Z0-9._\- ]/g, '_').substring(0, 100) + '.nzb';
+
+      var form = new FormData();
+      form.append('file', new File([blob], filename, {type: 'application/x-nzb'}));
+
+      var tbRes = await fetch('https://api.torbox.app/v1/api/usenet/createusenetdownload', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + tbKey },
+        body: form
+      });
+
+      var data = await tbRes.json();
+      if (data.success) {
+        btn.textContent = '✓ Gesendet';
+        btn.style.background = '#15803d';
+        showToast('NZB an TorBox gesendet! ✓', 'success');
+      } else {
+        throw new Error(data.detail || 'TorBox-Fehler');
+      }
+    } catch(e) {
+      btn.disabled = false;
+      btn.textContent = '↗ TorBox';
+      showToast('Fehler: ' + e.message, 'error');
+    }
+  }
+
+  function escHtml(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  var toastTimer;
+  function showToast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ t.className = 'toast'; }, 3000);
+  }
+</script>
+</body>
+</html>
